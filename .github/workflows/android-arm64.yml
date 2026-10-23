@@ -1,0 +1,81 @@
+name: Android ARM64 baseline
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-arm64:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Checkout workspace
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK and NDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android build components
+        run: |
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0" "cmake;3.22.1" "ndk;27.2.12479018"
+
+      - name: Fetch upstream Android project and engine
+        run: |
+          git clone --recurse-submodules https://github.com/simutrans/simutrans-android-project.git android-project
+          git clone --depth 1 https://github.com/simutrans/simutrans.git android-project/simutrans/jni/simutrans
+
+      - name: Prepare SDL2 and FluidSynth
+        working-directory: android-project/simutrans/jni
+        run: |
+          git -C SDL revert 53dbe18 --no-edit || git -C SDL revert 53dbe18 --no-commit
+          curl --fail --location --retry 4 --retry-delay 2 \
+            https://github.com/FluidSynth/fluidsynth/releases/download/v2.6.0/fluidsynth-v2.6.0-android24.zip \
+            --output /tmp/fluidsynth-android24.zip
+          mkdir -p fluidsynth
+          unzip -q -o /tmp/fluidsynth-android24.zip -d fluidsynth
+
+      - name: Build native dependencies for ARM64 only
+        working-directory: android-project/simutrans/jni
+        env:
+          ANDROID_NDK: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
+        run: |
+          # The upstream script builds four ABIs. CI's first milestone only needs the target phone ABI.
+          sed -i '/build_for_android armeabi-v7a /s/^/# ARM64-only CI: /' build_libraries.sh
+          sed -i '/build_for_android x86 /s/^/# ARM64-only CI: /' build_libraries.sh
+          bash ./build_libraries.sh
+
+      - name: Prepare game assets
+        working-directory: android-project/simutrans/jni
+        run: |
+          bash ./simutrans/src/android/AndroidPreBuild.sh
+          mkdir -p ../src/main/assets
+          cp -rf simutrans/simutrans/. ../src/main/assets/
+          cp -r SDL/android-project/app/src/main/java ../src/main/
+
+      - name: Build ARM64 debug APK
+        working-directory: android-project
+        run: |
+          sed -i "s/abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'/abiFilters 'arm64-v8a'/" simutrans/build.gradle
+          ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK and build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simutrans-android-arm64-debug
+          path: |
+            android-project/simutrans/build/outputs/apk/debug/*.apk
+            android-project/**/build/outputs/**/*.txt
+          if-no-files-found: warn
+          retention-days: 14
