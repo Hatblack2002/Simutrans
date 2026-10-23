@@ -108,13 +108,13 @@ jobs:
               s = s.replace(old, "abiFilters 'arm64-v8a'")
           elif "abiFilters" in s:
               import re
-              s, n = re.subn(r"abiFilters\\s+[^\\n]+", "abiFilters 'arm64-v8a'", s, count=1)
+              s, n = re.subn(r"abiFilters\s+[^\n]+", "abiFilters 'arm64-v8a'", s, count=1)
               if not n:
                   raise SystemExit("Could not rewrite abiFilters in simutrans/build.gradle")
           else:
               raise SystemExit("No abiFilters declaration found in simutrans/build.gradle")
           p.write_text(s)
-          print("\\n".join(line for line in s.splitlines() if "abiFilters" in line))
+          print("\n".join(line for line in s.splitlines() if "abiFilters" in line))
           PY
           ./gradlew --no-daemon --stacktrace assembleDebug
 
