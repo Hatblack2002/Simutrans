@@ -52,6 +52,7 @@ jobs:
           # The upstream script builds four ABIs. CI's first milestone only needs the target phone ABI.
           sed -i '/build_for_android armeabi-v7a /s/^/# ARM64-only CI: /' build_libraries.sh
           sed -i '/build_for_android x86 /s/^/# ARM64-only CI: /' build_libraries.sh
+          sed -i '/build_for_android x86_64 /s/^/# ARM64-only CI: /' build_libraries.sh
           bash ./build_libraries.sh
 
       - name: Prepare game assets
