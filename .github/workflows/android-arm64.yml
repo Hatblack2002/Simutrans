@@ -38,7 +38,7 @@ jobs:
       - name: Prepare SDL2 and FluidSynth
         working-directory: android-project/simutrans/jni
         run: |
-          git -C SDL revert 53dbe18 --no-edit || git -C SDL revert 53dbe18 --no-commit
+          git -C SDL revert 53dbe18 --no-commit
           curl --fail --location --retry 4 --retry-delay 2 \
             https://github.com/FluidSynth/fluidsynth/releases/download/v2.6.0/fluidsynth-v2.6.0-android24.zip \
             --output /tmp/fluidsynth-android24.zip
@@ -47,9 +47,8 @@ jobs:
 
       - name: Build native dependencies for ARM64 only
         working-directory: android-project/simutrans/jni
-        env:
-          ANDROID_NDK: ${{ env.ANDROID_HOME }}/ndk/27.2.12479018
         run: |
+          export ANDROID_NDK="$ANDROID_HOME/ndk/27.2.12479018"
           # The upstream script builds four ABIs. CI's first milestone only needs the target phone ABI.
           sed -i '/build_for_android armeabi-v7a /s/^/# ARM64-only CI: /' build_libraries.sh
           sed -i '/build_for_android x86 /s/^/# ARM64-only CI: /' build_libraries.sh
