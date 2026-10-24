@@ -80,8 +80,13 @@ jobs:
           sed -i '/build_for_android armeabi-v7a /s/^/# ARM64-only CI: /' build_libraries.sh
           sed -i '/build_for_android x86 /s/^/# ARM64-only CI: /' build_libraries.sh
           sed -i '/build_for_android x86_64 /s/^/# ARM64-only CI: /' build_libraries.sh
+          # Gradle assembles the Debug variant, so native libraries must be emitted under prebuilt/debug.
+          # Build only the target ABI and target configuration; release artifacts are not used by assembleDebug.
+          sed -i 's/^  #build_for_android arm64-v8a android-24 debug /  build_for_android arm64-v8a android-24 debug /' build_libraries.sh
+          sed -i '/build_for_android arm64-v8a android-24 release /s/^/# ARM64-only debug CI: /' build_libraries.sh
           grep -n 'build_for_android' build_libraries.sh
           bash ./build_libraries.sh
+          test -f libpng/prebuilt/debug/arm64-v8a/libpng16d.so
 
       - name: Prepare game assets
         shell: bash
