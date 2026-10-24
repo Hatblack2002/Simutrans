@@ -66,7 +66,7 @@ jobs:
           unzip -t /tmp/fluidsynth-android24.zip
           mkdir -p fluidsynth
           unzip -q -o /tmp/fluidsynth-android24.zip -d fluidsynth
-          find fluidsynth -maxdepth 4 -type f | head -80
+          find fluidsynth -maxdepth 4 -type f -print | sed -n '1,80p'
 
       - name: Build native dependencies for ARM64 only
         shell: bash
@@ -94,7 +94,7 @@ jobs:
           cp -r SDL/android-project/app/src/main/java ../src/main/
           test -f ../src/main/AndroidManifest.xml
           test -d ../src/main/assets
-          find ../src/main/assets -maxdepth 2 -type f | head -80
+          find ../src/main/assets -maxdepth 2 -type f -print | sed -n '1,80p'
 
       - name: Configure ARM64-only Gradle build
         shell: bash
@@ -129,7 +129,7 @@ jobs:
           test -n "$APK"
           ls -lh "$APK"
           sha256sum "$APK"
-          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | head -40
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | sed -n '1,40p'
 
       - name: Upload APK and build diagnostics
         if: always()
